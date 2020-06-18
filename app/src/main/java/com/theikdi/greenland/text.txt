@@ -1,0 +1,222 @@
+
+        LoadWeb();
+
+        progressBar.setMax(100);
+        progressBar.setProgress(1);
+        swipe.setOnRefreshListener(new SwipeRefreshLayout.OnRefreshListener() {
+            @Override
+            public void onRefresh() {
+                webView.reload();
+            }
+        });
+        /*
+
+        webView.setWebChromeClient(new WebChromeClient() {
+            public void onProgressChanged(WebView view, int progress) {
+
+
+                progressBar.setProgress(progress);
+            }
+        });
+
+         */
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+                progressBar.setVisibility(View.VISIBLE);
+            }
+
+            @SuppressWarnings("deprecation")
+            public void onReceivedError(WebView view, int errorCode, String description, String failingUrl) {
+
+                webView.loadUrl("http://greenland.theikdimaung.com/");
+            }
+
+            public void onLoadResource(WebView view, String url) {
+                //Doesn't work
+                //swipe.setRefreshing(true);
+            }
+
+            public void onPageFinished(WebView view, String url) {
+                //Hide the SwipeReefreshLayout
+                progressBar.setVisibility(View.GONE);
+                swipe.setRefreshing(false);
+            }
+        });
+    }
+
+    @SuppressLint("SetJavaScriptEnabled")
+    public void LoadWeb() {
+
+        webView = findViewById(R.id.webView);
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setAppCacheEnabled(true);
+        webView.loadUrl("http://greenland.theikdimaung.com/");
+        swipe.setRefreshing(true);
+    }
+
+    /////////////////
+    /////////////////////
+    ///////////
+    ////////////////////////////
+    /////////////////
+    ///////////////////////////////////////
+    /////////////////
+    /
+    ///////////////////////////
+    package com.theikdi.greenland;
+
+    import android.app.Activity;
+    import android.content.Intent;
+    import android.net.Uri;
+    import android.webkit.WebView;
+    import android.webkit.WebViewClient;
+
+    public class WebViewClientImpl extends WebViewClient {
+        private Activity activity = null;
+
+        public WebViewClientImpl(Activity activity) {
+            this.activity = activity;
+        }
+        /*public void onPageS (WebView view, String url, Bitmap bitmap){
+            super.onPageStarted(view,url,bitmap);
+            Toast.makeText(activity.getApplicationContext(),"Loading",Toast.LENGTH_LONG);
+        }
+        public void onPageF (WebView view, String url){
+            super.onPageFinished(view,url);
+            Toast.makeText(activity.getApplicationContext(),"Connected",Toast.LENGTH_SHORT);
+        } */
+
+        @Override
+        public boolean shouldOverrideUrlLoading(WebView webView, String url) {
+            if(url.indexOf("greenland.theikdimaung.com") > -1 ) return false;
+
+            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+            activity.startActivity(intent);
+            return true;
+        }
+
+
+    }
+    ///////////
+    ///////////////////////
+    ///////////
+    //////////////////////
+    ///////////////////////
+    ///////////////
+    ///////////////////////////////////////
+    ///////////////////////
+    ////////////////////
+    /////////////////////////////
+    package com.theikdi.greenland;
+
+    import androidx.appcompat.app.AppCompatActivity;
+
+    import android.os.Bundle;
+    import android.view.KeyEvent;
+    import android.webkit.WebSettings;
+    import android.webkit.WebView;
+
+    import com.google.android.gms.ads.AdRequest;
+    import com.google.android.gms.ads.AdView;
+    import com.google.android.gms.ads.MobileAds;
+    import com.google.android.gms.ads.initialization.InitializationStatus;
+    import com.google.android.gms.ads.initialization.OnInitializationCompleteListener;
+
+
+    public class MainActivity extends AppCompatActivity {
+
+        private WebView webView = null;
+        //SwipeRefreshLayout swipe;
+        //ProgressBar progressBar;
+
+        // Ad Mode
+        private AdView adView;
+        //End Ad MOde
+
+        @Override
+        protected void onCreate(Bundle savedInstanceState) {
+            super.onCreate(savedInstanceState);
+            setContentView(R.layout.activity_main);
+            loadAdsmob();
+            //progressBar = findViewById(R.id.awv_progressBar);
+
+            this.webView = findViewById(R.id.webView);
+
+            WebSettings webSettings = webView.getSettings();
+            webSettings.setJavaScriptEnabled(true);
+
+            WebViewClientImpl webViewClient = new WebViewClientImpl(this);
+            webView.setWebViewClient(webViewClient);
+
+            webView.loadUrl("http://greenland.theikdimaung.com");
+
+
+            //webView.loadData("<html><body>Hello, world!</body></html>", "text/html", "UTF-8");
+        }
+
+        @Override
+        public boolean onKeyDown(int keyCode, KeyEvent event) {
+            if ((keyCode == KeyEvent.KEYCODE_BACK) && this.webView.canGoBack()) {
+                this.webView.goBack();
+                return true;
+            }
+
+            return super.onKeyDown(keyCode, event);
+        }
+
+        private void loadAdsmob() {
+            //
+            // Initialize the Mobile Ads SDK.
+            MobileAds.initialize(this, new OnInitializationCompleteListener() {
+                @Override
+                public void onInitializationComplete(InitializationStatus initializationStatus) {
+                }
+            });
+
+            // Gets the ad view defined in layout/ad_fragment.xml with ad unit ID set in
+            // values/strings.xml.
+            adView = findViewById(R.id.ad_view);
+
+            // Create an ad request. Check your logcat output for the hashed device ID to
+            // get test ads on a physical device. e.g.
+            // "Use AdRequest.Builder.addTestDevice("ABCDEF012345") to get test ads on this device."
+            AdRequest adRequest = new AdRequest.Builder()
+                    .addTestDevice(AdRequest.DEVICE_ID_EMULATOR)
+                    .build();
+
+            // Start loading the ad in the background.
+            adView.loadAd(adRequest);
+        }
+
+        //
+        /** Called when leaving the activity */
+        @Override
+        public void onPause() {
+            if (adView != null) {
+                adView.pause();
+            }
+            super.onPause();
+        }
+
+        /** Called when returning to the activity */
+        @Override
+        public void onResume() {
+            super.onResume();
+            if (adView != null) {
+                adView.resume();
+            }
+        }
+
+        /** Called before the activity is destroyed */
+        @Override
+        public void onDestroy() {
+            if (adView != null) {
+                adView.destroy();
+            }
+            super.onDestroy();
+        }
+    }
+
